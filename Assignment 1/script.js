@@ -14,12 +14,183 @@ function initializeGame(){
         ['WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL',],
     ];
 
-    let playerPos = [10, 5];
+    let gameState = {
+        time: 60, 
+        score: 0,
+        dots: 59,
+        state: ''};
 
-    let time = 60;
-    let score = 0;
+    let player = {
+        pos: [10, 5],
+        move: '',
+        canMove: true,
+        getPos() {
+            return this.pos;
+        },
+    };
+
+    let enemy1 = {
+        initPos: [5, 5],
+        pos: [5, 5],
+        prevTile: '___',
+    };
+
+    let enemy2 = {
+        initPos: [6, 5],
+        pos: [6, 5],
+        prevTile: '___',
+    };
+
+    stateEventListener(gameState, gameBoard, player, enemy1, enemy2);
+}
+
+function gameOver(gameState){
+    console.log("Game Over");
+    if(gameState.state === 'win'){
+        console.log("Your Score:");
+        console.log(gameState.time);
+        let finalScore = gameState.score + gameState.time*100;
+        console.log(finalScore)
+    }
+}
+
+function game(gameState, player, enemy1, enemy2, gameBoard){
+
+    if(gameState.state === 'play'){
+        random(enemy1, player, gameBoard, gameState, enemy2.prevTile);
+        random(enemy2, player, gameBoard, gameState, enemy1.prevTile);
+    }
     
-    keyEventListener(gameBoard, playerPos);
+    gameState.time--;
+    if(gameState.time === 0){
+        gameState.state = 'win';
+        gameOver(gameState);
+    }
+}
+
+function checkCaught(gameState, gameBoard, enemy, player){
+    if(enemy.pos[0] === player.pos[0] && enemy.pos[1] === player.pos[1]){
+        gameState.score -= 500;
+        if(gameState.score <= 0){
+            gameState.state = 'lose';
+            gameOver(gameState);
+        }
+        enemy.pos = enemy.initPos;
+        gameBoard[enemy.pos[0]][enemy.pos[1]] = 'enemy';
+    }
+}
+
+function checkDot(gameState, gameBoard, player){
+    if(gameBoard[player.pos[0]][player.pos[1]] === 'dot'){
+        gameState.score += 100;
+        gameState.dots --;
+        if(gameState.dots === 0){
+            gameState.state = 'win';
+            gameOver(gameState);
+        }
+    }
+    console.log(gameState.score)
+}
+
+function keyEventListener(gameState, gameBoard, player, enemy1, enemy2) {
+	document.addEventListener('keydown', move = (e) => {
+		const keyName = e.key;
+        if(!player.canMove) return;
+        setTimeout(function() { player.canMove = true; }, 250);
+		if (keyName === 'ArrowLeft' && gameBoard[player.pos[0]][player.pos[1] - 1] !== 'WALL') {
+            player.move = 'left';
+            playerMove(gameState, gameBoard, player, enemy1, enemy2);
+		} else if (keyName === 'ArrowRight'  && gameBoard[player.pos[0]][player.pos[1] + 1] !== 'WALL') {
+            player.move = 'right';
+            playerMove(gameState, gameBoard, player, enemy1, enemy2);
+		} else if (keyName === 'ArrowUp'  && gameBoard[player.pos[0] - 1][player.pos[1]] !== 'WALL') {
+            player.move = 'up';
+            playerMove(gameState, gameBoard, player, enemy1, enemy2);
+		} else if (keyName === 'ArrowDown'  && gameBoard[player.pos[0] + 1][player.pos[1]] !== 'WALL') {
+            player.move = 'down';
+            playerMove(gameState, gameBoard, player, enemy1, enemy2);
+		}
+        printBoard(gameBoard);
+	});
+}
+
+let gamePlay;
+function stateEventListener(gameState, gameBoard, player, enemy1, enemy2){
+    document.addEventListener('keydown', (event) => {
+
+        const keyName = event.key;
+        if(keyName === 's' && gameState.state === ''){
+            keyEventListener(gameState, gameBoard, player, enemy1, enemy2);
+            gamePlay = setInterval(game, 1000, gameState, player, enemy1, enemy2, gameBoard);
+            gameState.state = 'play';
+            
+        }else if(keyName === 'p' && gameState.state === 'play'){
+            player.canMove = false;
+            gameState.state = 'pause';
+            
+        }else if(keyName === 'r' && gameState.state === 'pause'){
+            player.canMove = true;
+            gameState.state = 'play';
+            
+        }else if(keyName === 'R'){
+            document.removeEventListener('keydown', move);
+            clearInterval(gamePlay);
+            console.log('restart');
+            initializeGame();
+        }
+    });
+}
+
+function random(enemy, player, gameBoard, gameState, otherEnemyPrev){
+    let posMoves = [];
+    if(gameBoard[enemy.pos[0]][enemy.pos[1] - 1] !== 'WALL') posMoves.push('left');
+    if(gameBoard[enemy.pos[0]][enemy.pos[1] + 1] !== 'WALL') posMoves.push('right');
+    if(gameBoard[enemy.pos[0] - 1][enemy.pos[1]] !== 'WALL') posMoves.push('up');
+    if(gameBoard[enemy.pos[0] + 1][enemy.pos[1]] !== 'WALL') posMoves.push('down');
+
+    let move = Math.floor(Math.random() * posMoves.length);
+    gameBoard[enemy.pos[0]][enemy.pos[1]] = enemy.prevTile;
+    if(posMoves[move] === 'left'){
+        enemy.pos = [enemy.pos[0], enemy.pos[1] - 1];
+    }else if(posMoves[move] === 'right'){
+        enemy.pos = [enemy.pos[0], enemy.pos[1] + 1];
+    }else if(posMoves[move] === 'up'){
+        enemy.pos = [enemy.pos[0] - 1, enemy.pos[1]];
+    }else if(posMoves[move] === 'down'){
+        enemy.pos = [enemy.pos[0] + 1, enemy.pos[1]];
+    }
+
+    if(gameBoard[enemy.pos[0]][enemy.pos[1]] === 'enemy'){
+        enemy.prevTile = otherEnemyPrev;
+    }else{
+        enemy.prevTile = gameBoard[enemy.pos[0]][enemy.pos[1]];
+    }
+    
+    gameBoard[enemy.pos[0]][enemy.pos[1]] = 'enemy';
+    checkCaught(gameState, gameBoard, enemy, player);
+    printBoard(gameBoard);
+}
+
+function playerMove(gameState, gameBoard, player, enemy1, enemy2){
+
+    gameBoard[player.pos[0]][player.pos[1]] = '___';
+    if(player.move === 'left'){
+        player.pos = [player.pos[0], player.pos[1] - 1];
+    }else if(player.move === 'right'){
+        player.pos = [player.pos[0], player.pos[1] + 1];
+    }else if(player.move === 'up'){
+        player.pos = [player.pos[0] - 1, player.pos[1]];
+    }else if(player.move === 'down'){
+        player.pos = [player.pos[0] + 1, player.pos[1]];
+    }
+    
+    checkCaught(gameState, gameBoard, enemy1, player);
+    checkCaught(gameState, gameBoard, enemy2, player);
+    checkDot(gameState, gameBoard, player);
+
+    gameBoard[player.pos[0]][player.pos[1]] = 'player';
+    player.canMove = false;
+    player.move = '';
 }
 
 function printBoard(gameBoard){
@@ -28,49 +199,13 @@ function printBoard(gameBoard){
     let buffer = '';
     for(let i = 0; i < gameBoard.length; i++){
         for(let j = 0; j < gameBoard[i].length; j++){
-            buffer += `<span class='tile'>${gameBoard[i][j]}</span>` + " ";
+            buffer += `<span class='tile'>${gameBoard[i][j]}</span>` + ' ';
         }
 
-        buffer += "<br>";
+        buffer += '<br>';
     }
 
     div.innerHTML = buffer
-}
-
-function keyEventListener(gameBoard, playerPos) {
-    
-	document.addEventListener('keydown', (event) => {
-		const keyName = event.key;
-		if (keyName === "ArrowLeft" && gameBoard[playerPos[0]][playerPos[1] - 1] !== 'WALL') {
-            gameBoard[playerPos[0]][playerPos[1]] = 'empty';
-            
-            playerPos = [playerPos[0], playerPos[1] - 1];
-            gameBoard[playerPos[0]][playerPos[1]] = 'player';
-
-		} else if (keyName === "ArrowRight"  && gameBoard[playerPos[0]][playerPos[1] + 1] !== 'WALL') {
-			gameBoard[playerPos[0]][playerPos[1]] = 'empty';
-            
-            playerPos = [playerPos[0], playerPos[1] + 1];
-            gameBoard[playerPos[0]][playerPos[1]] = 'player';
-
-		} else if (keyName === "ArrowUp"  && gameBoard[playerPos[0] - 1][playerPos[1]] !== 'WALL') {
-			gameBoard[playerPos[0]][playerPos[1]] = 'empty';
-            
-            playerPos = [playerPos[0] - 1, playerPos[1]];
-            gameBoard[playerPos[0]][playerPos[1]] = 'player';
-
-		} else if (keyName === "ArrowDown"  && gameBoard[playerPos[0] + 1][playerPos[1]] !== 'WALL') {
-			gameBoard[playerPos[0]][playerPos[1]] = 'empty';
-            
-            playerPos = [playerPos[0] + 1, playerPos[1]];
-            gameBoard[playerPos[0]][playerPos[1]] = 'player';
-
-		}
-        
-        printBoard(gameBoard);
-
-	});
-
 }
 
 initializeGame();
