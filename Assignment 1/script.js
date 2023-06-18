@@ -24,9 +24,7 @@ function initializeGame(){
         pos: [10, 5],
         move: '',
         canMove: true,
-        getPos() {
-            return this.pos;
-        },
+        state: 0,
     };
 
     let enemy1 = {
@@ -69,7 +67,7 @@ function game(gameState, player, enemy1, enemy2, gameBoard){
 }
 
 function checkCaught(gameState, gameBoard, enemy, player){
-    if(enemy.pos[0] === player.pos[0] && enemy.pos[1] === player.pos[1]){
+    if(player.state === 0 && enemy.pos[0] === player.pos[0] && enemy.pos[1] === player.pos[1]){
         gameState.score -= 500;
         if(gameState.score <= 0){
             gameState.state = 'lose';
@@ -78,6 +76,8 @@ function checkCaught(gameState, gameBoard, enemy, player){
         enemy.pos = enemy.initPos;
         gameBoard[enemy.pos[0]][enemy.pos[1]] = 'enemy';
     }
+
+    player.state = 0;
 }
 
 function checkDot(gameState, gameBoard, player){
@@ -110,7 +110,7 @@ function keyEventListener(gameState, gameBoard, player, enemy1, enemy2) {
             player.move = 'down';
             playerMove(gameState, gameBoard, player, enemy1, enemy2);
 		}
-        printBoard(gameBoard);
+        //printBoard(gameBoard);
 	});
 }
 
@@ -168,7 +168,7 @@ function random(enemy, player, gameBoard, gameState, otherEnemyPrev){
     
     gameBoard[enemy.pos[0]][enemy.pos[1]] = 'enemy';
     checkCaught(gameState, gameBoard, enemy, player);
-    printBoard(gameBoard);
+    //printBoard(gameBoard);
 }
 
 function playerMove(gameState, gameBoard, player, enemy1, enemy2){
