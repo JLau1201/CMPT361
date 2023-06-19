@@ -1,26 +1,26 @@
 const vertexShaderSource = `#version 300 es
 #pragma vscode_glsllint_stage: vert
 
-uniform float uPointSize;
-uniform vec2 uPosition;
+layout(location = 0) in vec2 aPosition;
+layout(location = 1) in vec3 aColor;
+
+out vec3 vColor;
 
 void main(){
-    gl_PointSize = uPointSize;
-    gl_Position = vec4(uPosition, 0.0, 1.0);
+    vColor = aColor;
+    gl_Position = vec4(aPosition, 0.0, 1.0);
 }`;
 
 const fragmentShaderSource = `#version 300 es
 #pragma vscode_glsllint_stage: frag
 
-precision mediump float;
+precision lowp float;
 
-uniform int uIndex;
-uniform vec4 uColors[2];
-
+in vec3 vColor;
 out vec4 fragColor;
 
 void main(){
-    fragColor = uColors[uIndex];
+    fragColor = vec4(vColor, 1.0);
 }`;
 
 function compileShader(gl, shaderType, shaderSource) {
@@ -71,7 +71,7 @@ function initializeContext(){
     const pixelRatio = window.devicePixelRatio || 1;
 
     canvas.width = pixelRatio * canvas.clientWidth * 2;
-    canvas.height = pixelRatio * canvas.clientHeight * 5;
+    canvas.height = pixelRatio * canvas.clientHeight * 4;
 
     gl.viewport(0, 0, canvas.width, canvas.height);
 
@@ -92,28 +92,205 @@ function setup(){
     gl.useProgram(program);
     
     drawBackground(gl, program);
+    
 }
 
-function drawBackground(gl, program){
-    const uPositionLoc = gl.getUniformLocation(program, 'uPosition');
-    const uPointSizeLoc = gl.getUniformLocation(program, 'uPointSize');
-    const uIndexLoc = gl.getUniformLocation(program, 'uIndex');
-    const uColorsLoc = gl.getUniformLocation(program, 'uColors');
+function drawBackground(gl){
+    const vertexBuffer = new Float32Array([
+        // Background
+        -1,-1,          .4, .4, .4,
+        1,-1,           .4, .4, .4,
+        -1,1,           .4, .4, .4,
+        1,1,            .4, .4, .4,
 
-    gl.uniform4fv(uColorsLoc, [
-        .4,.4,.4,1,
-        .8,.8,.8,1,
+        // Border
+        -.825,-.825,    .9, .9, .9,
+        .825,-.825,     .9, .9, .9,
+        -.825,.825,     .9, .9, .9,
+        .825,.825,      .9, .9, .9,
+
+        // Bottom Left Block
+        -.65,-.325,     0.00530, 0.530, 0.0315,
+        -.0875,-.325,   0.00530, 0.530, 0.0315,
+        -.65,-.65,      0.00530, 0.530, 0.0315,
+        -.0875,-.65,    0.00530, 0.530, 0.0315,
+        
+        // Top Right Block
+        .65,.325,       0.00530, 0.530, 0.0315,
+        .0875,.325,     0.00530, 0.530, 0.0315,
+        .65,.65,        0.00530, 0.530, 0.0315,
+        .0875,.65,      0.00530, 0.530, 0.0315,
+
+        // Top Left Block
+        -.65,.325,      0.00530, 0.530, 0.0315,
+        -.0875,.325,    0.00530, 0.530, 0.0315,
+        -.65,.65,       0.00530, 0.530, 0.0315,
+        -.0875,.65,     0.00530, 0.530, 0.0315,
+
+        // Bottom Right Block
+        .65,-.325,      0.00530, 0.530, 0.0315,
+        .0875,-.325,    0.00530, 0.530, 0.0315,
+        .65,-.65,       0.00530, 0.530, 0.0315,
+        .0875,-.65,     0.00530, 0.530, 0.0315,
+
+        // Left Pillar
+        -.65,-.15,      0.00530, 0.530, 0.0315,
+        -.4625,-.15,    0.00530, 0.530, 0.0315,
+        -.65,.15,       0.00530, 0.530, 0.0315,
+        -.4625,.15,     0.00530, 0.530, 0.0315,
+
+        // Right Pillar
+        .65,-.15,       0.00530, 0.530, 0.0315,
+        .4625,-.15,     0.00530, 0.530, 0.0315,
+        .65,.15,        0.00530, 0.530, 0.0315,
+        .4625,.15,      0.00530, 0.530, 0.0315,
     ]);
+
+    const elementIndexData = new Uint8Array([
+        0,1,2,
+        1,2,3,
+
+        4,5,6,
+        5,6,7,
+
+        8,9,10,
+        9,10,11,
+
+        12,13,14,
+        13,14,15,
+
+        16,17,18,
+        17,18,19,
+        
+        20,21,22,
+        21,22,23,
+
+        24,25,26,
+        25,26,27,
+
+        28,29,30,
+        29,30,31
+    ]);
+
+    const aPositionLoc = 0;
+    const aColorLoc = 1;
     
-    gl.uniform2f(uPositionLoc, 0, 0);
-    gl.uniform1f(uPointSizeLoc, 750);
-    gl.uniform1i(uIndexLoc, 0);
+    const vertBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertexBuffer, gl.STATIC_DRAW);
 
-    gl.drawArrays(gl.POINTS, 0, 1);
+    const elementIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementIndexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementIndexData, gl.STATIC_DRAW);
 
-    gl.uniform1f(uPointSizeLoc, 500);
-    gl.uniform1i(uIndexLoc, 1);
-    gl.drawArrays(gl.POINTS, 0, 1);
+    gl.vertexAttribPointer(aPositionLoc, 2, gl.FLOAT, false, 5 * 4, 0);
+    gl.vertexAttribPointer(aColorLoc, 3, gl.FLOAT, false, 5 * 4, 2 * 4);
+
+    gl.enableVertexAttribArray(aPositionLoc);
+    gl.enableVertexAttribArray(aColorLoc);
+   
+    gl.drawElements(gl.TRIANGLES, 48, gl.UNSIGNED_BYTE, 0);
+    
+    const lineBuffer = new Float32Array([
+        // Right
+        .0875,.15,      0.0448, 0.273, 0.640,
+        .0875,.13,      0.0448, 0.273, 0.640,
+        .0875,.11,      0.0448, 0.273, 0.640,
+        .0875,.09,      0.0448, 0.273, 0.640,
+        .0875,.07,      0.0448, 0.273, 0.640,
+        .0875,.05,      0.0448, 0.273, 0.640,
+        .0875,.03,      0.0448, 0.273, 0.640,
+        .0875,.01,      0.0448, 0.273, 0.640,
+        .0875,-.01,     0.0448, 0.273, 0.640,
+        .0875,-.03,     0.0448, 0.273, 0.640,
+        .0875,-.05,     0.0448, 0.273, 0.640,
+        .0875,-.07,     0.0448, 0.273, 0.640,
+        .0875,-.09,     0.0448, 0.273, 0.640,
+        .0875,-.11,     0.0448, 0.273, 0.640,
+        .0875,-.13,     0.0448, 0.273, 0.640,
+        .0875,-.15,     0.0448, 0.273, 0.640,
+
+        // Left
+        -.0875,.15,      0.0448, 0.273, 0.640,
+        -.0875,.13,      0.0448, 0.273, 0.640,
+        -.0875,.11,      0.0448, 0.273, 0.640,
+        -.0875,.09,      0.0448, 0.273, 0.640,
+        -.0875,.07,      0.0448, 0.273, 0.640,
+        -.0875,.05,      0.0448, 0.273, 0.640,
+        -.0875,.03,      0.0448, 0.273, 0.640,
+        -.0875,.01,      0.0448, 0.273, 0.640,
+        -.0875,-.01,     0.0448, 0.273, 0.640,
+        -.0875,-.03,     0.0448, 0.273, 0.640,
+        -.0875,-.05,     0.0448, 0.273, 0.640,
+        -.0875,-.07,     0.0448, 0.273, 0.640,
+        -.0875,-.09,     0.0448, 0.273, 0.640,
+        -.0875,-.11,     0.0448, 0.273, 0.640,
+        -.0875,-.13,     0.0448, 0.273, 0.640,
+        -.0875,-.15,     0.0448, 0.273, 0.640,
+
+        // Bot
+        -.0875,-.15,    0.0448, 0.273, 0.640,
+        -.0625,-.15,    0.0448, 0.273, 0.640,
+        -.0375,-.15,    0.0448, 0.273, 0.640,
+        -.0125,-.15,    0.0448, 0.273, 0.640,
+        .0125,-.15,    0.0448, 0.273, 0.640,
+        .0375,-.15,    0.0448, 0.273, 0.640,
+        .0625,-.15,    0.0448, 0.273, 0.640,
+        .0875,-.15,    0.0448, 0.273, 0.640,
+
+        // Top
+        -.0875,.15,    0.0448, 0.273, 0.640,
+        -.0625,.15,    0.0448, 0.273, 0.640,
+        -.0375,.15,    0.0448, 0.273, 0.640,
+        -.0125,.15,    0.0448, 0.273, 0.640,
+        .0125,.15,    0.0448, 0.273, 0.640,
+        .0375,.15,    0.0448, 0.273, 0.640,
+        .0625,.15,    0.0448, 0.273, 0.640,
+        .0875,.15,    0.0448, 0.273, 0.640,
+    ]);
+
+    const lineIndexData = new Uint8Array([
+        0,1,
+        2,3,
+        4,5,
+        6,7,
+        8,9,
+        10,11,
+        12,13,
+        14,15,
+
+        16,17,
+        18,19,
+        20,21,
+        22,23,
+        24,25,
+        26,27,
+        28,29,
+        30,31,
+
+        32,33,
+        34,35,
+        36,37,
+        38,39,
+
+        40,41,
+        42,43,
+        44,45,
+        46,47,
+    ]);
+
+    const lineBuff = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineBuff);
+    gl.bufferData(gl.ARRAY_BUFFER, lineBuffer, gl.STATIC_DRAW);
+
+    const lineIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, lineIndexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, lineIndexData, gl.STATIC_DRAW);
+
+    gl.vertexAttribPointer(aPositionLoc, 2, gl.FLOAT, false, 5 * 4, 0);
+    gl.vertexAttribPointer(aColorLoc, 3, gl.FLOAT, false, 5 * 4, 2 * 4);
+
+    gl.drawElements(gl.LINES, 48, gl.UNSIGNED_BYTE, 0);
 }
 
 setup();
