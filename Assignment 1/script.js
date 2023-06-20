@@ -5,8 +5,8 @@ function initializeGame(){
         ['WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL',],
         ['WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL',],
         ['WALL', 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'WALL',],
-        ['WALL', 'dot' , 'WALL', 'dot' , 'dot' , 'enemy', 'dot', 'dot' , 'WALL', 'dot' , 'WALL',],
-        ['WALL', 'dot' , 'WALL', 'dot' , 'dot' , 'enemy', 'dot', 'dot' , 'WALL', 'dot' , 'WALL',],
+        ['WALL', 'dot' , 'WALL', 'dot' , 'dot' , 'WALL', 'dot' , 'dot' , 'WALL', 'dot' , 'WALL',],
+        ['WALL', 'dot' , 'WALL', 'dot' , 'dot' , 'WALL', 'dot' , 'dot' , 'WALL', 'dot' , 'WALL',],
         ['WALL', 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'WALL',],
         ['WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL',],
         ['WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL',],
@@ -30,13 +30,13 @@ function initializeGame(){
     let enemy1 = {
         initPos: [5, 5],
         pos: [5, 5],
-        prevTile: '___',
+        tag: 1,
     };
 
     let enemy2 = {
         initPos: [6, 5],
         pos: [6, 5],
-        prevTile: '___',
+        tag: 2,
     };
 
     stateEventListener(gameState, gameBoard, player, enemy1, enemy2);
@@ -55,11 +55,13 @@ function gameOver(gameState){
 function game(gameState, player, enemy1, enemy2, gameBoard){
 
     if(gameState.state === 'play'){
-        random(enemy1, player, gameBoard, gameState, enemy2.prevTile);
-        random(enemy2, player, gameBoard, gameState, enemy1.prevTile);
+        random(enemy1, player, gameBoard, gameState);
+        random(enemy2, player, gameBoard, gameState);
+        gameState.time--;
+        let timer = document.getElementById("time");
+        timer.innerHTML = gameState.time;
     }
-    
-    gameState.time--;
+
     if(gameState.time === 0){
         gameState.state = 'win';
         gameOver(gameState);
@@ -67,28 +69,35 @@ function game(gameState, player, enemy1, enemy2, gameBoard){
 }
 
 function checkCaught(gameState, gameBoard, enemy, player){
+    let score = document.getElementById('score');
+
     if(player.state === 0 && enemy.pos[0] === player.pos[0] && enemy.pos[1] === player.pos[1]){
         gameState.score -= 500;
+        score.innerHTML = gameState.score;
         if(gameState.score <= 0){
             gameState.state = 'lose';
             gameOver(gameState);
         }
         enemy.pos = enemy.initPos;
-        gameBoard[enemy.pos[0]][enemy.pos[1]] = 'enemy';
+        drawScene('none', 'reset', enemy.tag, gameBoard);
     }
-
+    
     player.state = 0;
 }
 
 function checkDot(gameState, gameBoard, player){
+    let score = document.getElementById('score');
+
     if(gameBoard[player.pos[0]][player.pos[1]] === 'dot'){
         gameState.score += 100;
         gameState.dots --;
+        score.innerHTML = gameState.score;
         if(gameState.dots === 0){
             gameState.state = 'win';
             gameOver(gameState);
         }
     }
+
     console.log(gameState.score)
 }
 
@@ -117,7 +126,6 @@ function keyEventListener(gameState, gameBoard, player, enemy1, enemy2) {
 let gamePlay;
 function stateEventListener(gameState, gameBoard, player, enemy1, enemy2){
     document.addEventListener('keydown', (event) => {
-
         const keyName = event.key;
         if(keyName === 's' && gameState.state === ''){
             keyEventListener(gameState, gameBoard, player, enemy1, enemy2);
@@ -141,7 +149,7 @@ function stateEventListener(gameState, gameBoard, player, enemy1, enemy2){
     });
 }
 
-function random(enemy, player, gameBoard, gameState, otherEnemyPrev){
+function random(enemy, player, gameBoard, gameState){
     let posMoves = [];
     if(gameBoard[enemy.pos[0]][enemy.pos[1] - 1] !== 'WALL') posMoves.push('left');
     if(gameBoard[enemy.pos[0]][enemy.pos[1] + 1] !== 'WALL') posMoves.push('right');
@@ -149,7 +157,7 @@ function random(enemy, player, gameBoard, gameState, otherEnemyPrev){
     if(gameBoard[enemy.pos[0] + 1][enemy.pos[1]] !== 'WALL') posMoves.push('down');
 
     let move = Math.floor(Math.random() * posMoves.length);
-    gameBoard[enemy.pos[0]][enemy.pos[1]] = enemy.prevTile;
+    //gameBoard[enemy.pos[0]][enemy.pos[1]] = enemy.prevTile;
     if(posMoves[move] === 'left'){
         enemy.pos = [enemy.pos[0], enemy.pos[1] - 1];
     }else if(posMoves[move] === 'right'){
@@ -159,14 +167,16 @@ function random(enemy, player, gameBoard, gameState, otherEnemyPrev){
     }else if(posMoves[move] === 'down'){
         enemy.pos = [enemy.pos[0] + 1, enemy.pos[1]];
     }
-
-    if(gameBoard[enemy.pos[0]][enemy.pos[1]] === 'enemy'){
-        enemy.prevTile = otherEnemyPrev;
-    }else{
-        enemy.prevTile = gameBoard[enemy.pos[0]][enemy.pos[1]];
-    }
     
-    gameBoard[enemy.pos[0]][enemy.pos[1]] = 'enemy';
+    drawScene('none', posMoves[move], enemy.tag, gameBoard);
+
+    // if(gameBoard[enemy.pos[0]][enemy.pos[1]] === 'enemy'){
+    //     enemy.prevTile = otherEnemyPrev;
+    // }else{
+    //     enemy.prevTile = gameBoard[enemy.pos[0]][enemy.pos[1]];
+    // }
+    
+    // gameBoard[enemy.pos[0]][enemy.pos[1]] = 'enemy';
     checkCaught(gameState, gameBoard, enemy, player);
     //printBoard(gameBoard);
 }
@@ -183,10 +193,14 @@ function playerMove(gameState, gameBoard, player, enemy1, enemy2){
     }else if(player.move === 'down'){
         player.pos = [player.pos[0] + 1, player.pos[1]];
     }
+
     
     checkCaught(gameState, gameBoard, enemy1, player);
     checkCaught(gameState, gameBoard, enemy2, player);
     checkDot(gameState, gameBoard, player);
+
+    drawScene(player.move, 'none', 0, gameBoard);
+
 
     gameBoard[player.pos[0]][player.pos[1]] = 'player';
     player.canMove = false;
