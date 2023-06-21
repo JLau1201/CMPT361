@@ -269,7 +269,7 @@ function initializeContext(){
     return gl;
 }
 // Call all intialization functions and draw initial scene
-function setup(playerInput, enemyInput, enemy, gameBoard){
+function setup(playerInput, enemyInput, enemy, gameBoard, playerState){
     gl = initializeContext();
     
     let vertexShader = compileShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
@@ -282,12 +282,12 @@ function setup(playerInput, enemyInput, enemy, gameBoard){
     gl.enableVertexAttribArray(aPositionLoc);
     gl.enableVertexAttribArray(aColorLoc);
     
-    drawScene(playerInput, enemyInput, enemy, gameBoard);
+    drawScene(playerInput, enemyInput, enemy, gameBoard, playerState);
 }
 // Draw all items
-function drawScene(playerInput, enemyInput, enemy, gameBoard){
+function drawScene(playerInput, enemyInput, enemy, gameBoard, playerState){
     drawBackground(gameBoard);
-    drawPlayer(playerInput);
+    drawPlayer(playerInput, playerState);
     drawGhosts(enemyInput, enemy);
 }
 // Draw the Ghosts
@@ -344,7 +344,7 @@ function drawGhosts(input, enemy){
 
 }
 // Draw Pacman
-function drawPlayer(input){
+function drawPlayer(input, playerState){
     /*
     Pacman referenced as circle inside of each tile
     Based on player input
@@ -395,11 +395,24 @@ function drawPlayer(input){
         pRightX = pCenter[0]+pLen/2;
         pRightY = pCenter[1]-.03;
     }
+    // Define Pacman colour based on wether he has the Power Pellet
+    let pColor1;
+    let pColor2;
+    let pColor3;
+    if (playerState === 0){
+        pColor1 = 0;
+        pColor2 = 0;
+        pColor3 = 1;
+    }else if(playerState === 1){
+        pColor1 = 0.0;
+        pColor2 = 0.880;
+        pColor3 = 0.528;
+    }
 
     const playerVertexBuffer = new Float32Array([
-        pFrontX,pFrontY,            0,0,1,
-        pLeftX,pLeftY,              0,0,1,
-        pRightX,pRightY,            0,0,1,
+        pFrontX,pFrontY,            pColor1,pColor2,pColor3,
+        pLeftX,pLeftY,              pColor1,pColor2,pColor3,
+        pRightX,pRightY,            pColor1,pColor2,pColor3,
     ]);
 
     const playerVertBuffer = gl.createBuffer();

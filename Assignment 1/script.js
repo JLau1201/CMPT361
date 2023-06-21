@@ -11,7 +11,7 @@ function initializeGame(){
         ['WALL', 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'WALL',],
         ['WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL',],
         ['WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL', 'WALL', 'WALL', 'dot' , 'WALL',],
-        ['WALL', 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot' , 'dot', 'dot' , 'dot' , 'WALL',],
+        ['WALL', 'dot' , 'dot' , 'dot' , 'dot' , '___' , 'dot' , 'dot', 'dot' , 'dot' , 'WALL',],
         ['WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL', 'WALL',],
     ];
 
@@ -41,7 +41,7 @@ function initializeGame(){
     };
 
     // Start webgl drawing
-    setup('none', 'none', 0, gameBoard);
+    setup('none', 'none', 0, gameBoard, player.state);
     
     // Enable the game state listener to Start game
     stateEventListener(gameState, gameBoard, player, enemy1, enemy2);
@@ -53,7 +53,7 @@ function gameOver(gameState){
     if(gameState.state === 'win'){
         // On player win
         // Define the players final score by their score + remaining time * 100
-        let finalScore = gameState.score + Math.floor(gameState.time)*100;
+        let finalScore = gameState.score + Math.ceil(gameState.time)*100;
         overlay.innerHTML = 'You Win!<br>Your Score: ' + finalScore + '<br>Press Shift + R to Restart';
         overlay.style.display = 'flex';
     }else if(gameState.state === 'lose'){
@@ -65,18 +65,20 @@ function gameOver(gameState){
 // Loops every .33s
 function game(gameState, player, enemy1, enemy2, gameBoard){
     // When the game is in play, tell enemies how to move
+
     if(gameState.state === 'play'){
         random(enemy1, player, gameBoard, gameState);
         shortestPath(enemy2, player, gameBoard, gameState);
         gameState.time-=.333;
+        if(Math.ceil(gameState.time) === 0){
+            gameState.state = 'win';
+            gameOver(gameState);
+        }
         let timer = document.getElementById("time");
-        timer.innerHTML = Math.floor(gameState.time);
+        timer.innerHTML = Math.ceil(gameState.time);
     }
     // Declare the Player win when time runs out
-    if(gameState.time === 0){
-        gameState.state = 'win';
-        gameOver(gameState);
-    }
+    
 }
 // Check if the player is on the same tile as an enemy
 function checkCaught(gameState, gameBoard, enemy, player){
@@ -104,7 +106,7 @@ function checkCaught(gameState, gameBoard, enemy, player){
 
         // Reset enemy position to middle
         enemy.pos = enemy.initPos;
-        drawScene('none', 'reset', enemy.tag, gameBoard);
+        drawScene('none', 'reset', enemy.tag, gameBoard, player.state);
     }
 }
 //Check if the player is on a dot or power pellet
@@ -123,7 +125,6 @@ function checkDot(gameState, gameBoard, player){
     // Check if player recieves power pellet to not lose points on next death
     }else if(gameBoard[player.pos[0]][player.pos[1]] === 'pellet'){
         player.state = 1;
-        console.log(player.state);
     }
 }
 // Event Listener to check for player input to move Pacman
@@ -201,7 +202,7 @@ function stateEventListener(gameState, gameBoard, player, enemy1, enemy2){
             gameState = {
                 time: 60, 
                 score: 0,
-                dots: 59,
+                dots: 58,
                 state: ''};
         
             player = {
@@ -226,7 +227,7 @@ function stateEventListener(gameState, gameBoard, player, enemy1, enemy2){
             let score = document.getElementById('score');
             time.innerHTML = gameState.time;
             score.innerHTML = gameState.score;
-            drawScene('reset', 'reset', 3, gameBoard);
+            drawScene('reset', 'reset', 3, gameBoard, player.state);
             overlay.innerHTML = 'Press S to Start';
             overlay.style.display = 'flex';
         }
@@ -254,7 +255,7 @@ function random(enemy, player, gameBoard, gameState){
         enemy.pos = [enemy.pos[0] + 1, enemy.pos[1]];
     }
     
-    drawScene('none', posMoves[move], enemy.tag, gameBoard);
+    drawScene('none', posMoves[move], enemy.tag, gameBoard, player.state);
 
     checkCaught(gameState, gameBoard, enemy, player);
 }
@@ -343,7 +344,7 @@ function shortestPath(enemy, player, gameBoard, gameState){
         enemy.pos = [enemy.pos[0] + 1, enemy.pos[1]];
     }
     
-    drawScene('none', move, enemy.tag, gameBoard);
+    drawScene('none', move, enemy.tag, gameBoard, player.state);
 
     checkCaught(gameState, gameBoard, enemy, player);
 }
@@ -367,7 +368,7 @@ function playerMove(gameState, gameBoard, player, enemy1, enemy2){
     checkCaught(gameState, gameBoard, enemy2, player);
     checkDot(gameState, gameBoard, player);
 
-    drawScene(player.move, 'none', 0, gameBoard);
+    drawScene(player.move, 'none', 0, gameBoard, player.state);
 
 
     gameBoard[player.pos[0]][player.pos[1]] = 'player';
