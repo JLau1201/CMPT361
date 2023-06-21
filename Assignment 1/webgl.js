@@ -27,26 +27,28 @@ void main(){
     fragColor = vec4(vColor, 1.0);
 }`;
 
-// Global initialization
+// Global variable initialization
 const aPositionLoc = 0;
 const aColorLoc = 1;
 let gl;
 let program;
 
-let pRad = .175/2;
+let pRad = .14/2;
 let pLen = Math.sqrt(3) * pRad;
-let pFrontX = 0;
-let pFrontY = -.65;
-let pLeftX = -pLen/2;
-let pLeftY = -.78125;
-let pRightX = pLen/2;
-let pRightY = -.78125;
+let pCenter = [0,-.74];
+let pFrontX = pCenter[0];
+let pFrontY = pCenter[1]+pRad;
+let pLeftX = pCenter[0]-pLen/2;
+let pLeftY = pCenter[1]-.03;
+let pRightX = pCenter[0]+pLen/2;
+let pRightY = pCenter[1]-.03;
 
 let g1X = 0;
 let g1Y = .081;
 let g2X = 0;
 let g2Y = -.081;
 
+// Set the vertex positions and colours for the background
 const bgVertexBuffer = new Float32Array([
     // Background
     -1,-1,          .4, .4, .4,
@@ -96,7 +98,7 @@ const bgVertexBuffer = new Float32Array([
     .65,.15,        0.00530, 0.530, 0.0315,
     .4625,.15,      0.00530, 0.530, 0.0315,
 ]);
-
+// Set the indices used to draw shapes for background
 const bgIndexData = new Uint8Array([
     0,1,2,
     1,2,3,
@@ -122,7 +124,7 @@ const bgIndexData = new Uint8Array([
     28,29,30,
     29,30,31
 ]);
-
+// Set the vertex positions and colours for the enemy box
 const bgLineVertexBuffer = new Float32Array([
     // Right
     .0875,.15,      0.0448, 0.273, 0.640,
@@ -180,7 +182,7 @@ const bgLineVertexBuffer = new Float32Array([
     .0625,.15,    0.0448, 0.273, 0.640,
     .0875,.15,    0.0448, 0.273, 0.640,
 ]);
-
+// Set the indices used to draw the shapes for the enemy box
 const bgLineIndexData = new Uint8Array([
     0,1,
     2,3,
@@ -210,7 +212,7 @@ const bgLineIndexData = new Uint8Array([
     44,45,
     46,47,
 ]);
-
+// Create the vertex and fragment shaders
 function compileShader(gl, shaderType, shaderSource) {
     // Create the shader object
     let shader = gl.createShader(shaderType);
@@ -230,10 +232,10 @@ function compileShader(gl, shaderType, shaderSource) {
    
     return shader;
 }
-
+// Create the program
 function createProgram(gl, vertexShader, fragmentShader) {
     // create a program.
-    let program = gl.createProgram();
+    program = gl.createProgram();
    
     // attach the shaders.
     gl.attachShader(program, vertexShader);
@@ -248,10 +250,8 @@ function createProgram(gl, vertexShader, fragmentShader) {
         // something went wrong with the link; get the error
         throw ("program failed to link:" + gl.getProgramInfoLog(program));
     }
-   
-    return program;
 }
-
+// Create the canvas and intialize it
 function initializeContext(){
     let canvas = document.getElementById("myCanvas");
     let gl = canvas.getContext("webgl2");
@@ -260,7 +260,7 @@ function initializeContext(){
 
     canvas.width = pixelRatio * canvas.clientWidth * 2;
     canvas.height = pixelRatio * canvas.clientHeight * 4;
-
+    
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     gl.clearColor(1, 1, 1, 0);
@@ -268,32 +268,34 @@ function initializeContext(){
 
     return gl;
 }
-
-function setup(){
+// Call all intialization functions and draw initial scene
+function setup(playerInput, enemyInput, enemy, gameBoard){
     gl = initializeContext();
     
     let vertexShader = compileShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
     let fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
 
-    program = createProgram(gl, vertexShader, fragmentShader);
+    createProgram(gl, vertexShader, fragmentShader);
 
     gl.useProgram(program);
 
     gl.enableVertexAttribArray(aPositionLoc);
     gl.enableVertexAttribArray(aColorLoc);
     
-    drawScene();
+    drawScene(playerInput, enemyInput, enemy, gameBoard);
 }
-
+// Draw all items
 function drawScene(playerInput, enemyInput, enemy, gameBoard){
     drawBackground(gameBoard);
     drawPlayer(playerInput);
     drawGhosts(enemyInput, enemy);
 }
-
+// Draw the Ghosts
 function drawGhosts(input, enemy){
+    // Set the size of the ghosts
     const uPointSizeLoc = gl.getUniformLocation(program, 'uPointSize');
     gl.uniform1f(uPointSizeLoc, 30);
+    // Get which enemy moved and move them according to the input
     if(enemy === 1){
         if(input === 'left'){
             g1X -= .184;
@@ -307,7 +309,7 @@ function drawGhosts(input, enemy){
             g1X = 0;
             g1Y = .08;
         }
-    }else{
+    }else if(enemy === 2){
         if(input === 'left'){
             g2X -= .184;
         }else if(input === 'right'){
@@ -320,11 +322,16 @@ function drawGhosts(input, enemy){
             g2X = 0;
             g2Y = -.08;
         }
+    }else if(enemy === 3){
+        g1X = 0;
+        g1Y = .08;
+        g2X = 0;
+        g2Y = -.08;
     }
     
     const ghostVertexBuffer = new Float32Array([
-        g1X,g1Y,      1,0,0,
-        g2X,g2Y,      0,0,1,
+        g1X,g1Y,      1.00, 0.340, 0.450,
+        g2X,g2Y,      0.430, 0.905, 1.00
     ]);
 
     const ghostVertBuffer = gl.createBuffer();
@@ -336,36 +343,57 @@ function drawGhosts(input, enemy){
     gl.drawArrays(gl.POINTS, 0, 2);
 
 }
-
-function rotateRight(){
-    pFrontX = Math.sin(90*Math.PI/180)*pRad + pFrontX;
-    pFrontY = Math.cos(90*Math.PI/180)*pRad - pFrontY;
-    
-    pLeftX = Math.sin(90*Math.PI/180)*pRad + pLeftX;
-    pLeftY = Math.cos(90*Math.PI/180)*pRad - pLeftY;
-
-    pRightX = Math.sin(90*Math.PI/180)*pRad + pRightX;
-    pRightY = Math.cos(90*Math.PI/180)*pRad - pRightY;
-    
-}
-
+// Draw Pacman
 function drawPlayer(input){
+    /*
+    Pacman referenced as circle inside of each tile
+    Based on player input
+    Move the center of the circle accordingly
+    Rotate Pacman
+    Rotation defined by center of the circle
+    Point Pacman towards a direction by redefining his front in relation to his radius
+    Redraw the left and right angles based on the height of Pacman
+    */
     if(input === 'left'){
-        pFrontX -= .184;
-        pLeftX -= .184;
-        pRightX -= .184;
+        pCenter[0] -= .184;
+        pFrontX = pCenter[0]-pRad;
+        pFrontY = pCenter[1];
+        pLeftX = pCenter[0]+.03;
+        pLeftY = pCenter[1]-pLen/2;
+        pRightX = pCenter[0]+.03;
+        pRightY = pCenter[1]+pLen/2;
     } else if(input === 'right'){
-        pFrontX += .184;
-        pLeftX += .184;
-        pRightX += .184;
+        pCenter[0] += .184;
+        pFrontX = pCenter[0]+pRad;
+        pFrontY = pCenter[1];
+        pLeftX = pCenter[0]-.03;
+        pLeftY = pCenter[1]+pLen/2;
+        pRightX = pCenter[0]-.03;
+        pRightY = pCenter[1]-pLen/2;
     }else if(input === 'up'){
-        pFrontY += .163;
-        pLeftY += .163;
-        pRightY += .163;
+        pCenter[1] += .1635;
+        pFrontX = pCenter[0];
+        pFrontY = pCenter[1]+pRad;
+        pLeftX = pCenter[0]-pLen/2;
+        pLeftY = pCenter[1]-.03;
+        pRightX = pCenter[0]+pLen/2;
+        pRightY = pCenter[1]-.03;
     }else if(input === 'down'){
-        pFrontY -= .163;
-        pLeftY -= .163;
-        pRightY -= .163;
+        pCenter[1] -=.1635;
+        pFrontX = pCenter[0];
+        pFrontY = pCenter[1]-pRad;
+        pLeftX = pCenter[0]-pLen/2;
+        pLeftY = pCenter[1]+.03;
+        pRightX = pCenter[0]+pLen/2;
+        pRightY = pCenter[1]+.03;
+    }else if(input === 'reset'){
+        pCenter = [0,-.74];
+        pFrontX = pCenter[0];
+        pFrontY = pCenter[1]+pRad;
+        pLeftX = pCenter[0]-pLen/2;
+        pLeftY = pCenter[1]-.03;
+        pRightX = pCenter[0]+pLen/2;
+        pRightY = pCenter[1]-.03;
     }
 
     const playerVertexBuffer = new Float32Array([
@@ -383,14 +411,17 @@ function drawPlayer(input){
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
-
+// Draw the dots
 function drawDot(xOffset, yOffset){
-    const r = .04;
-    const dotVertexBuffer = [-.185*xOffset,-.165*yOffset,0.980, 0.964, 0.0294];
+    // Set dot size
+    const r = .03;
+    // Create the vertex buffer to draw triangles around a center
+    // Each circle has 20 edges
+    const dotVertexBuffer = [-.1851*xOffset,-.164*yOffset,0.980, 0.964, 0.0294];
     let angle = 90;
     for(let i = 0; i < 20; i++){
-        dotVertexBuffer.push(Math.cos(angle*Math.PI/180)*r-.182*xOffset);
-        dotVertexBuffer.push(Math.sin(angle*Math.PI/180)*r-.165*yOffset);
+        dotVertexBuffer.push(Math.cos(angle*Math.PI/180)*r-.1851*xOffset);
+        dotVertexBuffer.push(Math.sin(angle*Math.PI/180)*r-.164*yOffset);
         dotVertexBuffer.push(0.980);
         dotVertexBuffer.push(0.964);
         dotVertexBuffer.push(0.0294);
@@ -422,8 +453,51 @@ function drawDot(xOffset, yOffset){
 
     gl.drawElements(gl.TRIANGLES, 60, gl.UNSIGNED_BYTE, 0);
 }
+// Draw the pellet
+function drawPellet(xOffset, yOffset){
+    // Set pellet size
+    const r = .03;
+    // Create the vertex buffer to draw triangles around a center
+    // Each circle has 20 edges
+    const dotVertexBuffer = [-.1851*xOffset,-.164*yOffset, 1.00, 0, 0];
+    let angle = 90;
+    for(let i = 0; i < 20; i++){
+        dotVertexBuffer.push(Math.cos(angle*Math.PI/180)*r-.1851*xOffset);
+        dotVertexBuffer.push(Math.sin(angle*Math.PI/180)*r-.164*yOffset);
+        dotVertexBuffer.push(1.0);
+        dotVertexBuffer.push(0);
+        dotVertexBuffer.push(0);
+        angle -= 18;
+    }
 
+    const dotIndexData = [];
+
+    for(let i = 0; i < 19; i++){
+        dotIndexData.push(0);
+        dotIndexData.push(i+1);
+        dotIndexData.push(i+2);
+    }
+
+    dotIndexData.push(0);
+    dotIndexData.push(20);
+    dotIndexData.push(1);
+
+    const dotVertBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, dotVertBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(dotVertexBuffer), gl.STATIC_DRAW);
+
+    const dotIndBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, dotIndBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(dotIndexData), gl.STATIC_DRAW);
+
+    gl.vertexAttribPointer(aPositionLoc, 2, gl.FLOAT, false, 5 * 4, 0);
+    gl.vertexAttribPointer(aColorLoc, 3, gl.FLOAT, false, 5 * 4, 2 * 4);
+
+    gl.drawElements(gl.TRIANGLES, 60, gl.UNSIGNED_BYTE, 0);
+}
+// Draw the background
 function drawBackground(gameBoard){
+    // Draw background
     const bgVertBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bgVertBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, bgVertexBuffer, gl.STATIC_DRAW);
@@ -437,6 +511,7 @@ function drawBackground(gameBoard){
     
     gl.drawElements(gl.TRIANGLES, 48, gl.UNSIGNED_BYTE, 0);
 
+    // Draw enemy box
     const bgLineVertBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bgLineVertBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, bgLineVertexBuffer, gl.STATIC_DRAW);
@@ -449,14 +524,15 @@ function drawBackground(gameBoard){
     gl.vertexAttribPointer(aColorLoc, 3, gl.FLOAT, false, 5 * 4, 2 * 4);
 
     gl.drawElements(gl.LINES, 48, gl.UNSIGNED_BYTE, 0);
-
+    
+    // Loop over game board to find where a dot or pellet is and draw it
     for(let i = 0; i < gameBoard.length; i++){
         for(let j = 0; j < gameBoard[i].length; j++){
             if(gameBoard[i][j] === 'dot'){
                 drawDot((5-j), -1*(5.5-i));
+            }else if(gameBoard[i][j] === 'pellet'){
+                drawPellet((5-j), -1*(5.5-i));
             }
         }
     }
 }
-
-setup();

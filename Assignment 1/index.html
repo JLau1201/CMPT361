@@ -10,17 +10,21 @@
 </head>
 <body>
     <div class="container">
-        <div id="content">
-            
-        </div>
+        <div id="content"></div>
+        <div id="overlay">Press S to Start</div>
         <p id="time">60</p>
         <p id="score">0</p>
         <canvas id="myCanvas"></canvas>
+        <div id="instructions">Press S to Start<br>Press P to Pause<br>Press R to Resume<br>Press Shift + R to Restart</div>
     </div>
 </body>
 </html>
 
 <style>
+    body {
+        background-color: black;
+    }
+
     .container {
             display: flex;
             align-items: center;
@@ -51,5 +55,28 @@
         position: absolute;
         right: 45.1rem;
         bottom: 50.6rem;
+    }
+
+    #overlay {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        font-size: 2rem;
+        position: fixed;
+        background-color: #c0c0c09a ;
+        height: 66.75dvh;
+        width: 31.2dvw;
+        text-align: center;
+    }
+
+    #instructions {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 1rem;
+        color: white;
+        position: fixed;
+        top: 39rem;
+        left: 42rem;
     }
 </style>
